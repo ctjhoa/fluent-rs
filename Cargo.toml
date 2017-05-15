@@ -4,4 +4,9 @@ version = "0.1.0"
 authors = ["Camille TJHOA <camille@contract-live.com>"]
 
 [dependencies]
-nom = "^2.2"
+regex = "0.2"
+lazy_static = "^0.2"
+
+[dependencies.nom]
+version = "^3.0"
+features = ["regexp", "regexp_macros", "verbose-errors"]
