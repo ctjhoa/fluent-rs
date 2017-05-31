@@ -11,23 +11,22 @@ use std::str;
 // TODO: body ::= (_* NL)* (entry NL)* entry? EOF
 // TODO: entry ::= comment | section | message
 
-named!(comment<&str>, map_res!(do_parse!(
-    char!('/') >>
-    char!('/') >>
-    value: take_while!(call!(|c| {
-        c != '\r' as u8 &&
-        c != '\n' as u8
+named!(comment<&str, &str>, do_parse!(
+    tag_s!("//") >>
+    value: take_while_s!(call!(|c| {
+        c != '\r' &&
+        c != '\n'
     })) >>
     eol >>
     (value)
-), str::from_utf8));
-named!(section<&str>, map_res!(delimited!(
-    tag!("[["),
+));
+named!(section<&str, &str>, delimited!(
+    tag_s!("[["),
     variant_symbol,
-    tag!("]]")
-), str::from_utf8));
+    tag_s!("]]")
+));
 
-named!(break_indent<&[u8], ()>, do_parse!(
+named!(break_indent<&str, ()>, do_parse!(
     many1!(
         do_parse!(
             many0!(eol) >>
@@ -38,51 +37,50 @@ named!(break_indent<&[u8], ()>, do_parse!(
     ()
 ));
 
-named!(identifier, re_bytes_find_static!(r"^[a-zA-Z_?-][a-zA-Z0-9_?-]*"));
-named!(external, do_parse!(
+named!(identifier<&str, &str>, re_find_static!(r"^[a-zA-Z_?-][a-zA-Z0-9_?-]*"));
+named!(external<&str, &str>, do_parse!(
     char!('$') >>
     identifier: identifier >>
     (identifier)
 ));
 
-named!(word, take_while!(call!(|c| {
-    c != '{' as u8 &&
-    c != '}' as u8 &&
-    c != '[' as u8 &&
-    c != ']' as u8 &&
-    c != '\n' as u8 &&
-    c != '\r' as u8 &&
-    c != '\\' as u8
+named!(word<&str, &str>, take_while_s!(call!(|c| {
+    c != '{' &&
+    c != '}' &&
+    c != '[' &&
+    c != ']' &&
+    c != ' ' &&
+    c != '\n' &&
+    c != '\r' &&
+    c != '\\'
 })));
-named!(builtin, re_bytes_find_static!(r"^[A-Z_?-]+"));
-named!(number, re_bytes_find_static!(r"^[-+]?[0-9]*\.?[0-9]+"));
+named!(builtin <&str, &str>, re_find_static!(r"^[A-Z_?-]+"));
+named!(number <&str, &str>, re_find_static!(r"^[-+]?[0-9]*\.?[0-9]+"));
 
-named!(variant_key, alt!(number | variant_symbol));
-named!(variant_symbol, take_while!(call!(|c| {
-    c != '{' as u8 &&
-    c != '}' as u8 &&
-    c != '[' as u8 &&
-    c != ']' as u8 &&
-    c != '\n' as u8 &&
-    c != '\r' as u8 &&
-    c != ' ' as u8 &&
-    c != '\t' as u8 &&
-    c != '\\' as u8
+named!(variant_key <&str, &str>, alt!(number | variant_symbol));
+named!(variant_symbol <&str, &str>, take_while_s!(call!(|c| {
+    c != '{' &&
+    c != '}' &&
+    c != '[' &&
+    c != ']' &&
+    c != '\n' &&
+    c != '\r' &&
+    c != '\\'
 })));
 // TODO: variant ::= NL __ '[' _? variant-key _? ']' __ pattern
 // TODO: default-variant ::= NL __ '*[' _? variant-key _? ']' __ pattern
 // TODO: variant-list ::= variant* default-variant variant*
 
-named!(tag, do_parse!(
+named!(tag <&str, &str>, do_parse!(
     char!('#') >>
     word: word >>
     (word)
 ));
-named!(tag_list <Vec<&str> >, do_parse!(
+named!(tag_list <&str, Vec<&str> >, do_parse!(
     eol >>
     list: many1!(do_parse!(
         break_indent >>
-        tag: map_res!(tag, str::from_utf8) >>
+        tag: tag >>
         (tag)
     )) >>
     (list)
@@ -132,54 +130,187 @@ named!(entity_value <&[u8], (&str,Vec<&str>)>,
 );
 
 #[test]
-fn parse_identifier_test() {
-    let ftl = &b"iden-tifi?er blah"[..];
+fn parse_comment_test() {
+    let source = "//This is a comment!
+entity1=value1";
 
-    let ftl_without_identifier = &b" blah"[..];
+    let remaining = "entity1=value1";
 
-    let res = identifier(ftl);
-    println!("{:?}", res);
+    let res = comment(source);
+    println!("{:?}", source);
     match res {
-        IResult::Done(i, o) => println!("i: {:?} | o: {:?}", str::from_utf8(i), o),
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(ftl_without_identifier, &b"iden-tifi?er"[..]));
-}
-
-#[test]
-fn parse_external_test() {
-    let ftl = &b"$iden-tifi?er blah"[..];
-
-    let ftl_without_external = &b" blah"[..];
-
-    let res = external(ftl);
-    println!("{:?}", res);
-    match res {
-        IResult::Done(i, o) => println!("i: {:?} | o: {:?}", str::from_utf8(i), o),
-        _ => println!("error")
-    }
-
-    assert_eq!(res, IResult::Done(ftl_without_external, &b"iden-tifi?er"[..]));
+    assert_eq!(res, IResult::Done(remaining, "This is a comment!"));
 }
 
 #[test]
 fn parse_section_test() {
-    let ftl = &b"[[section]]
+    let source = "[[section]]
 entity1=value1
-entity2 = value2"[..];
+entity2 = value2";
 
-    let ftl_without_section = &b"\nentity1=value1
-entity2 = value2"[..];
+    let remaining = "\nentity1=value1
+entity2 = value2";
 
-    let res = section(ftl);
+    let res = section(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {:?} | o: {:?}", str::from_utf8(i), o),
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(ftl_without_section, "section"));
+    assert_eq!(res, IResult::Done(remaining, "section"));
+}
+
+#[test]
+fn parse_break_indent_test() {
+    let source = "
+  Long value";
+
+    let remaining = "Long value";
+
+    let res = break_indent(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ()));
+}
+
+#[test]
+fn parse_identifier_test() {
+    let source = "iden-tifi?er foobar";
+
+    let remaining = " foobar";
+
+    let res = identifier(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, "iden-tifi?er"));
+}
+
+#[test]
+fn parse_external_test() {
+    let source = "$iden-tifi?er foobar";
+
+    let remaining = " foobar";
+
+    let res = external(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, "iden-tifi?er"));
+}
+
+#[test]
+fn parse_word_test() {
+    let source = "foo\\bar";
+
+    let remaining = "\\bar";
+
+    let res = word(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, "foo"));
+}
+
+#[test]
+fn parse_builtin_test() {
+    let source = "NUMBER(foobar)";
+
+    let remaining = "(foobar)";
+
+    let res = builtin(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, "NUMBER"));
+}
+
+#[test]
+fn parse_number_test() {
+    let source = "-0.9 foobar";
+
+    let remaining = " foobar";
+
+    let res = number(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, "-0.9"));
+}
+
+#[test]
+fn parse_variant_key_1_test() {
+    let source = "-0.9
+remaining";
+
+    let remaining = "\nremaining";
+
+    let res = variant_key(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, "-0.9"));
+}
+
+#[test]
+fn parse_variant_key_2_test() {
+    let source = "foo bar baz
+remaining";
+
+    let remaining = "\nremaining";
+
+    let res = variant_key(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, "foo bar baz"));
+}
+
+#[test]
+fn parse_variant_symbol_test() {
+    let source = "foo bar baz
+remaining";
+
+    let remaining = "\nremaining";
+
+    let res = variant_symbol(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, "foo bar baz"));
 }
 
 #[test]
