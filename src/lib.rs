@@ -68,6 +68,18 @@ named!(variant_symbol <&str, &str>, take_while_s!(call!(|c| {
     c != '\\'
 })));
 // TODO: variant ::= NL __ '[' _? variant-key _? ']' __ pattern
+// WAIT FOR 'pattern'
+// named!(variant<&str, (&str, &str)>, do_parse!(
+//     eol >>
+//     break_indent >>
+//     char!('[') >>
+//     opt!(space) >>
+//     variant_key: variant_key >>
+//     opt!(space) >>
+//     char!(']') >>
+//     pattern: pattern >>
+//     (variant_key, pattern)
+// ));
 // TODO: default-variant ::= NL __ '*[' _? variant-key _? ']' __ pattern
 // TODO: variant-list ::= variant* default-variant variant*
 
@@ -87,37 +99,87 @@ named!(tag_list <&str, Vec<&str> >, do_parse!(
 ));
 
 // TODO: attribute ::= NL __ '.' identifier value
+// WAIT FOR 'value'
+// named!(attribute<&str, (&str, <Vec<&str>)>, do_parse!(
+//     eol >>
+//     break_indent >>
+//     char!('.') >>
+//     identifier: identifier >>
+//     value: value >>
+//     (identifier, value)
+// ));
 // TODO: attribute-list ::= attribute+
 
+// TODO: message              ::= identifier ((value tag-list?) | (value? attribute-list))
+// TODO: value                ::= _? '=' __? pattern
+// COMPLETE REWORK
 named!(value <Vec<&str> >,
-    alt!(
-        do_parse!(
-            opt!(space) >>
-            char!('\n') >>
-            val: many0!(
-                do_parse!(
-                    space >>
-                    line: map_res!(
-                        take_while!(call!(|c| c != '\n' as u8)),
-                        str::from_utf8
-                    ) >>
-                    eol >>
-                    (line)
-                )
-            ) >>
-            (val)
-        ) |
-        do_parse!(
-            opt!(space) >>
-            val: map_res!(
-                take_while!(call!(|c| c != '\n' as u8)),
-                str::from_utf8
-            ) >>
-            eol >>
-            (vec![val])
-        )
-    )
+       alt!(
+           do_parse!(
+               opt!(space) >>
+                   char!('\n') >>
+                   val: many0!(
+                       do_parse!(
+                           space >>
+                               line: map_res!(
+                                   take_while!(call!(|c| c != '\n' as u8)),
+                                   str::from_utf8
+                               ) >>
+                               eol >>
+                               (line)
+                       )
+                   ) >>
+                   (val)
+           ) |
+           do_parse!(
+               opt!(space) >>
+                   val: map_res!(
+                       take_while!(call!(|c| c != '\n' as u8)),
+                       str::from_utf8
+                   ) >>
+                   eol >>
+                   (vec![val])
+           )
+       )
 );
+
+// TODO: pattern              ::= (text | placeable)+
+//       /* text can only include newlines if they're followed by an indent */
+//       /* \ and { must be escaped */
+// TODO: text-char            ::= (char - line-break) - [#x5c#x7b]
+//                          | break-indent
+//                          | '\u' hexdigit hexdigit hexdigit hexdigit
+//                          | '\' [#x5c#x7b]
+
+// TODO: text                 ::= text-char+
+
+// TODO: handle escaped quote when https://github.com/Geal/nom/issues/300 will be fixed
+named!(quoted_text <&str, &str>, do_parse!(
+    char!('"') >>
+    text: take_while_s!(call!(|c| c != '"')) >>
+    char!('"') >>
+    (text)
+));
+
+// TODO: placeable ::= '{' __? (expression | select-expression | variant-list) __? '}'
+// TODO: expression           ::= quoted-text | number | identifier | external | attribute-expression | variant-expression | call-expression | placeable
+// TODO: select-expression ::= expression __ '->' __ variant-list
+// TODO:
+named!(attribute_expression <&str, (&str,&str)>, do_parse!(
+    identifier1: identifier >>
+    char!('.') >>
+    identifier2: identifier >>
+    (identifier1, identifier2)
+));
+
+named!(named_argument <&str, (&str,&str)>, do_parse!(
+    identifier: identifier >>
+    opt!(break_indent) >>
+    char!(':') >>
+    opt!(break_indent) >>
+    value: alt!(quoted_text | number) >>
+    (identifier, value)
+));
 
 named!(entity_value <&[u8], (&str,Vec<&str>)>,
     do_parse!(
@@ -348,6 +410,81 @@ baz";
 
     assert_eq!(res, IResult::Done(remaining, vec!("foo", "bar")));
 }
+
+#[test]
+fn parse_quoted_text_test() {
+    let source = "\"foo bar\"
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = quoted_text(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, "foo bar"));
+}
+
+#[test]
+fn parse_attribute_expression_test() {
+    let source = "foo.bar
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = attribute_expression(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ("foo", "bar")));
+}
+
+#[test]
+fn parse_named_argument_1_test() {
+    let source = "foo:\"bar\"
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = named_argument(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ("foo", "bar")));
+}
+
+#[test]
+fn parse_named_argument_2_test() {
+    let source = "foo
+  :
+  -0.9
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = named_argument(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ("foo", "-0.9")));
+}
+
+
+
+
+
 
 #[test]
 fn parse_value_oneline_test() {
