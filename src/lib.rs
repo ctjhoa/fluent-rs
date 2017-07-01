@@ -314,6 +314,42 @@ remaining";
 }
 
 #[test]
+fn parse_tag_test() {
+    let source = "#foo
+bar";
+
+    let remaining = "\nbar";
+
+    let res = tag(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, "foo"));
+}
+
+#[test]
+fn parse_tag_list_test() {
+    let source = "
+  #foo
+  #bar
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = tag_list(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, vec!("foo", "bar")));
+}
+
+#[test]
 fn parse_value_oneline_test() {
     let ftl_value = &b"value1
 entity2 = value2"[..];
