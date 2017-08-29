@@ -157,12 +157,20 @@ named!(quoted_text <&str, &str>, do_parse!(
 // TODO: placeable ::= '{' __? (expression | select-expression | variant-list) __? '}'
 // TODO: expression           ::= quoted-text | number | identifier | external | attribute-expression | variant-expression | call-expression | placeable
 // TODO: select-expression ::= expression __ '->' __ variant-list
-// TODO:
 named!(attribute_expression <&str, (&str,&str)>, do_parse!(
     identifier1: identifier >>
     char!('.') >>
     identifier2: identifier >>
     (identifier1, identifier2)
+));
+named!(variant_expression <&str, (&str,&str)>, do_parse!(
+    identifier: identifier >>
+    char!('[') >>
+    opt!(space) >>
+    variant_key: variant_key >>
+    opt!(space) >>
+    char!(']') >>
+    (identifier, variant_key)
 ));
 
 named!(named_argument <&str, (&str,&str)>, do_parse!(
@@ -429,6 +437,40 @@ baz";
     let remaining = "\nbaz";
 
     let res = attribute_expression(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ("foo", "bar")));
+}
+
+#[test]
+fn parse_variant_expression_1_test() {
+    let source = "foo[bar]
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = variant_expression(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ("foo", "bar")));
+}
+
+#[test]
+fn parse_variant_expression_2_test() {
+    let source = "foo[ bar ]
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = variant_expression(source);
     println!("{:?}", res);
     match res {
         IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
