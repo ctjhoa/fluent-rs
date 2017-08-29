@@ -58,15 +58,8 @@ named!(builtin <&str, &str>, re_find_static!(r"^[A-Z_?-]+"));
 named!(number <&str, &str>, re_find_static!(r"^[-+]?[0-9]*\.?[0-9]+"));
 
 named!(variant_key <&str, &str>, alt!(number | variant_symbol));
-named!(variant_symbol <&str, &str>, take_while_s!(call!(|c| {
-    c != '{' &&
-    c != '}' &&
-    c != '[' &&
-    c != ']' &&
-    c != '\n' &&
-    c != '\r' &&
-    c != '\\'
-})));
+named!(variant_symbol<&str, &str>, re_find_static!(r"^[\w&&[^\{\}\[\]\s\\]]+([\t\x20][\w&&[^\{\}\[\]\s\\]]+)*"));
+
 // TODO: variant ::= NL __ '[' _? variant-key _? ']' __ pattern
 // WAIT FOR 'pattern'
 // named!(variant<&str, (&str, &str)>, do_parse!(
