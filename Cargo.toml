@@ -8,5 +8,5 @@ regex = "0.2"
 lazy_static = "^0.2"
 
 [dependencies.nom]
-version = "^3.0"
+version = "^3.2"
 features = ["regexp", "regexp_macros", "verbose-errors"]
