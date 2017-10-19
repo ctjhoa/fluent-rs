@@ -154,9 +154,10 @@ named!(quoted_text <&str, &str>, do_parse!(
     (text)
 ));
 
-// TODO: placeable ::= '{' __? (expression | select-expression | variant-list) __? '}'
-// TODO: expression           ::= quoted-text | number | identifier | external | attribute-expression | variant-expression | call-expression | placeable
-// TODO: select-expression ::= expression __ '->' __ variant-list
+// TODO: placeable ::= '{' __? (inline-expression | block-expression) __? '}'
+// TODO: inline-expression           ::= quoted-text | number | identifier | external | attribute-expression | variant-expression | call-expression | placeable
+// TODO: block-expression ::= select-expression | variant-list
+// TODO: select-expression ::= inline-expression __ '->' __ variant-list
 named!(attribute_expression <&str, (&str,&str)>, do_parse!(
     identifier1: identifier >>
     char!('.') >>
@@ -173,6 +174,7 @@ named!(variant_expression <&str, (&str,&str)>, do_parse!(
     (identifier, variant_key)
 ));
 
+// TODO: argument ::= inline-expression | named-argument
 named!(named_argument <&str, (&str,&str)>, do_parse!(
     identifier: identifier >>
     opt!(break_indent) >>
