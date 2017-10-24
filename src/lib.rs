@@ -155,7 +155,18 @@ named!(quoted_text <&str, &str>, do_parse!(
 ));
 
 // TODO: placeable ::= '{' __? (inline-expression | block-expression) __? '}'
+named!(placeable <&str, &str>, do_parse!(
+    char!('{') >>
+    opt!(space) >>
+    expression: inline_expression >>
+    opt!(space) >>
+    char!('}') >>
+    (expression)
+));
+
 // TODO: inline-expression           ::= quoted-text | number | identifier | external | attribute-expression | variant-expression | call-expression | placeable
+named!(inline_expression <&str, &str>, alt!(quoted_text | number | identifier | external | placeable));
+
 // TODO: block-expression ::= select-expression | variant-list
 // TODO: select-expression ::= inline-expression __ '->' __ variant-list
 named!(attribute_expression <&str, (&str,&str)>, do_parse!(
