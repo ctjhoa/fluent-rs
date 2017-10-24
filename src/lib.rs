@@ -4,6 +4,9 @@ extern crate nom;
 extern crate lazy_static;
 extern crate regex;
 
+
+mod ast;
+
 use nom::{IResult, space, alphanumeric, eol};
 
 use std::str;
@@ -11,16 +14,16 @@ use std::str;
 // TODO: body ::= (_* NL)* (entry NL)* entry? EOF
 // TODO: entry ::= comment | section | message
 
-named!(comment<&str, &str>, do_parse!(
+named!(comment<&str, ast::Comment>, do_parse!(
     tag_s!("//") >>
     value: take_while_s!(call!(|c| {
         c != '\r' &&
         c != '\n'
     })) >>
     eol >>
-    (value)
+    (ast::Comment{ content: value.to_string() })
 ));
-named!(section<&str, &str>, delimited!(
+named!(section<&str, ast::Section>, delimited!(
     tag_s!("[["),
     variant_symbol,
     tag_s!("]]")
@@ -37,11 +40,15 @@ named!(break_indent<&str, ()>, do_parse!(
     ()
 ));
 
-named!(identifier<&str, &str>, re_find_static!(r"^[a-zA-Z_?-][a-zA-Z0-9_?-]*"));
-named!(external<&str, &str>, do_parse!(
+named!(identifier<&str, ast::Identifier>, do_parse!(
+    name: re_find_static!(r"^[a-zA-Z_?-][a-zA-Z0-9_?-]*") >>
+    (ast::Identifier{ name: name.to_string() })
+));
+
+named!(external<&str, ast::External>, do_parse!(
     char!('$') >>
     identifier: identifier >>
-    (identifier)
+    (ast::External{ identifier })
 ));
 
 named!(word<&str, &str>, take_while_s!(call!(|c| {
@@ -55,10 +62,23 @@ named!(word<&str, &str>, take_while_s!(call!(|c| {
     c != '\\'
 })));
 named!(builtin <&str, &str>, re_find_static!(r"^[A-Z_?-]+"));
-named!(number <&str, &str>, re_find_static!(r"^[-+]?[0-9]*\.?[0-9]+"));
+named!(number <&str, ast::Number>, do_parse!(
+    value: re_find_static!(r"^[-+]?[0-9]*\.?[0-9]+") >>
+    (ast::Number{ value: value.to_string() })
+));
 
-named!(variant_key <&str, &str>, alt!(number | variant_symbol));
-named!(variant_symbol<&str, &str>, re_find_static!(r"^[\w&&[^\{\}\[\]\s\\]]+([\t\x20][\w&&[^\{\}\[\]\s\\]]+)*"));
+named!(variant_key <&str, ast::VariantKey>, alt!(do_parse!(
+        number: number >>
+        (ast::VariantKey::Number(number))
+    ) | do_parse!(
+        variant_symbol: variant_symbol >>
+        (ast::VariantKey::VariantSymbol(variant_symbol))
+    )
+));
+named!(variant_symbol<&str, ast::VariantSymbol>, do_parse!(
+    value: re_find_static!(r"^[\w&&[^\{\}\[\]\s\\]]+([\t\x20][\w&&[^\{\}\[\]\s\\]]+)*") >>
+    (ast::VariantSymbol{ name: value.to_string() })
+));
 
 // TODO: variant ::= NL __ '[' _? variant-key _? ']' __ pattern
 // WAIT FOR 'pattern'
@@ -76,12 +96,12 @@ named!(variant_symbol<&str, &str>, re_find_static!(r"^[\w&&[^\{\}\[\]\s\\]]+([\t
 // TODO: default-variant ::= NL __ '*[' _? variant-key _? ']' __ pattern
 // TODO: variant-list ::= variant* default-variant variant*
 
-named!(tag <&str, &str>, do_parse!(
+named!(tag <&str, ast::Tag>, do_parse!(
     char!('#') >>
     word: word >>
-    (word)
+    (ast::Tag{ name: word.to_string() })
 ));
-named!(tag_list <&str, Vec<&str> >, do_parse!(
+named!(tag_list <&str, Vec<ast::Tag> >, do_parse!(
     eol >>
     list: many1!(do_parse!(
         break_indent >>
@@ -147,52 +167,60 @@ named!(value <Vec<&str> >,
 // TODO: text                 ::= text-char+
 
 // TODO: handle escaped quote when https://github.com/Geal/nom/issues/300 will be fixed
-named!(quoted_text <&str, &str>, do_parse!(
+named!(quoted_text <&str, ast::QuotedText>, do_parse!(
     char!('"') >>
     text: take_while_s!(call!(|c| c != '"')) >>
     char!('"') >>
-    (text)
+    (ast::QuotedText { value: text.to_string() })
 ));
 
 // TODO: placeable ::= '{' __? (inline-expression | block-expression) __? '}'
-named!(placeable <&str, &str>, do_parse!(
-    char!('{') >>
-    opt!(space) >>
-    expression: inline_expression >>
-    opt!(space) >>
-    char!('}') >>
-    (expression)
-));
+// named!(placeable <&str, ast::InlineExpression>, do_parse!(
+//     char!('{') >>
+//     opt!(space) >>
+//     expression: inline_expression >>
+//     opt!(space) >>
+//     char!('}') >>
+//     (expression)
+// ));
 
 // TODO: inline-expression           ::= quoted-text | number | identifier | external | attribute-expression | variant-expression | call-expression | placeable
-named!(inline_expression <&str, &str>, alt!(quoted_text | number | identifier | external | placeable));
+// named!(inline_expression <&str, ast::InlineExpression>, alt!(quoted_text | number | identifier | external | placeable));
 
 // TODO: block-expression ::= select-expression | variant-list
 // TODO: select-expression ::= inline-expression __ '->' __ variant-list
-named!(attribute_expression <&str, (&str,&str)>, do_parse!(
-    identifier1: identifier >>
+named!(attribute_expression <&str, ast::AttributeExpression>, do_parse!(
+    identifier: identifier >>
     char!('.') >>
-    identifier2: identifier >>
-    (identifier1, identifier2)
+    name: identifier >>
+    (ast::AttributeExpression{ identifier: identifier, value: name })
 ));
-named!(variant_expression <&str, (&str,&str)>, do_parse!(
+named!(variant_expression <&str, ast::VariantExpression>, do_parse!(
     identifier: identifier >>
     char!('[') >>
     opt!(space) >>
-    variant_key: variant_key >>
+    key: variant_key >>
     opt!(space) >>
     char!(']') >>
-    (identifier, variant_key)
+    (ast::VariantExpression{ identifier, key })
 ));
 
 // TODO: argument ::= inline-expression | named-argument
-named!(named_argument <&str, (&str,&str)>, do_parse!(
+named!(named_argument_value <&str, ast::NamedArgumentValue>, alt!(do_parse!(
+        quoted_text: quoted_text >>
+        (ast::NamedArgumentValue::QuotedText(quoted_text))
+    ) | do_parse!(
+        number: number >>
+        (ast::NamedArgumentValue::Number(number))
+    )
+));
+named!(named_argument <&str, ast::NamedArgument>, do_parse!(
     identifier: identifier >>
     opt!(break_indent) >>
     char!(':') >>
     opt!(break_indent) >>
-    value: alt!(quoted_text | number) >>
-    (identifier, value)
+    value: named_argument_value >>
+    (ast::NamedArgument{ identifier, value })
 ));
 
 named!(entity_value <&[u8], (&str,Vec<&str>)>,
@@ -219,7 +247,7 @@ entity1=value1";
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, "This is a comment!"));
+    assert_eq!(res, IResult::Done(remaining, ast::Comment{ content: "This is a comment!".to_string() }));
 }
 
 #[test]
@@ -238,7 +266,7 @@ entity2 = value2";
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, "section"));
+    assert_eq!(res, IResult::Done(remaining, ast::Section{ name: "section".to_string() }));
 }
 
 #[test]
@@ -271,7 +299,7 @@ fn parse_identifier_test() {
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, "iden-tifi?er"));
+    assert_eq!(res, IResult::Done(remaining, ast::Identifier{ name: "iden-tifi?er".to_string() }));
 }
 
 #[test]
@@ -287,7 +315,7 @@ fn parse_external_test() {
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, "iden-tifi?er"));
+    assert_eq!(res, IResult::Done(remaining, ast::External{ identifier: ast::Identifier{ name: "iden-tifi?er".to_string() } }));
 }
 
 #[test]
@@ -335,7 +363,7 @@ fn parse_number_test() {
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, "-0.9"));
+    assert_eq!(res, IResult::Done(remaining, ast::Number{ value: "-0.9".to_string() }));
 }
 
 #[test]
@@ -352,7 +380,7 @@ remaining";
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, "-0.9"));
+    assert_eq!(res, IResult::Done(remaining, ast::VariantKey::Number(ast::Number{ value: "-0.9".to_string() })));
 }
 
 #[test]
@@ -369,7 +397,7 @@ remaining";
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, "foo bar baz"));
+    assert_eq!(res, IResult::Done(remaining, ast::VariantKey::VariantSymbol(ast::VariantSymbol{ name: "foo bar baz".to_string() })));
 }
 
 #[test]
@@ -386,7 +414,7 @@ remaining";
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, "foo bar baz"));
+    assert_eq!(res, IResult::Done(remaining, ast::VariantSymbol{ name: "foo bar baz".to_string() }));
 }
 
 #[test]
@@ -403,7 +431,7 @@ bar";
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, "foo"));
+    assert_eq!(res, IResult::Done(remaining, ast::Tag{ name: "foo".to_string() }));
 }
 
 #[test]
@@ -422,7 +450,7 @@ baz";
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, vec!("foo", "bar")));
+    assert_eq!(res, IResult::Done(remaining, vec!(ast::Tag{ name: "foo".to_string() }, ast::Tag{ name: "bar".to_string() })));
 }
 
 #[test]
@@ -439,7 +467,7 @@ baz";
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, "foo bar"));
+    assert_eq!(res, IResult::Done(remaining, ast::QuotedText{ value: "foo bar".to_string() }));
 }
 
 #[test]
@@ -456,7 +484,13 @@ baz";
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, ("foo", "bar")));
+    assert_eq!(res, IResult::Done(remaining, ast::AttributeExpression{
+        identifier: ast::Identifier{
+            name: "foo".to_string()
+        }, value: ast::Identifier{
+            name: "bar".to_string()
+        }
+    }));
 }
 
 #[test]
@@ -473,7 +507,13 @@ baz";
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, ("foo", "bar")));
+    assert_eq!(res, IResult::Done(remaining, ast::VariantExpression{
+        identifier: ast::Identifier {
+            name: "foo".to_string()
+        }, key: ast::VariantKey::VariantSymbol(ast::VariantSymbol{
+            name: "bar".to_string()
+        })
+    }));
 }
 
 #[test]
@@ -490,7 +530,14 @@ baz";
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, ("foo", "bar")));
+    assert_eq!(res, IResult::Done(remaining, ast::VariantExpression{
+        identifier: ast::Identifier {
+            name: "foo".to_string()
+        },
+        key: ast::VariantKey::VariantSymbol(ast::VariantSymbol{
+            name: "bar".to_string()
+        })
+    }));
 }
 
 #[test]
@@ -507,7 +554,13 @@ baz";
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, ("foo", "bar")));
+    assert_eq!(res, IResult::Done(remaining, ast::NamedArgument{
+        identifier: ast::Identifier{
+            name: "foo".to_string()
+        }, value: ast::NamedArgumentValue::QuotedText(ast::QuotedText{
+            value: "bar".to_string()
+        })
+    }));
 }
 
 #[test]
@@ -526,7 +579,14 @@ baz";
         _ => println!("error")
     }
 
-    assert_eq!(res, IResult::Done(remaining, ("foo", "-0.9")));
+    assert_eq!(res, IResult::Done(remaining, ast::NamedArgument{
+        identifier: ast::Identifier{
+            name: "foo".to_string()
+        },
+        value: ast::NamedArgumentValue::Number(ast::Number{
+            value: "-0.9".to_string()
+        })
+    }));
 }
 
 
