@@ -190,10 +190,10 @@ named!(quoted_text <&str, ast::QuotedText>, do_parse!(
 // TODO: block-expression ::= select-expression | variant-list
 // TODO: select-expression ::= inline-expression __ '->' __ variant-list
 named!(attribute_expression <&str, ast::AttributeExpression>, do_parse!(
-    identifier: identifier >>
+    id: identifier >>
     char!('.') >>
     name: identifier >>
-    (ast::AttributeExpression{ identifier: identifier, value: name })
+    (ast::AttributeExpression{ identifier: id, value: name })
 ));
 named!(variant_expression <&str, ast::VariantExpression>, do_parse!(
     identifier: identifier >>
