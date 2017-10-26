@@ -243,7 +243,7 @@ entity1=value1";
     let res = comment(source);
     println!("{:?}", source);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -262,7 +262,7 @@ entity2 = value2";
     let res = section(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -295,7 +295,7 @@ fn parse_identifier_test() {
     let res = identifier(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -311,7 +311,7 @@ fn parse_external_test() {
     let res = external(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -359,7 +359,7 @@ fn parse_number_test() {
     let res = number(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -376,7 +376,7 @@ remaining";
     let res = variant_key(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -393,7 +393,7 @@ remaining";
     let res = variant_key(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -410,7 +410,7 @@ remaining";
     let res = variant_symbol(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -427,7 +427,7 @@ bar";
     let res = tag(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -463,7 +463,7 @@ baz";
     let res = quoted_text(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -480,7 +480,7 @@ baz";
     let res = attribute_expression(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -503,7 +503,7 @@ baz";
     let res = variant_expression(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -526,7 +526,7 @@ baz";
     let res = variant_expression(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -550,7 +550,7 @@ baz";
     let res = named_argument(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
@@ -575,7 +575,7 @@ baz";
     let res = named_argument(source);
     println!("{:?}", res);
     match res {
-        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
         _ => println!("error")
     }
 
