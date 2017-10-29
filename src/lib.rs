@@ -176,17 +176,30 @@ named!(quoted_text <&str, ast::QuotedText>, do_parse!(
 ));
 
 // TODO: placeable ::= '{' __? (inline-expression | block-expression) __? '}'
-// named!(placeable <&str, ast::InlineExpression>, do_parse!(
-//     char!('{') >>
-//     opt!(space) >>
-//     expression: inline_expression >>
-//     opt!(space) >>
-//     char!('}') >>
-//     (expression)
-// ));
+named!(placeable <&str, ast::InlineExpression>, do_parse!(
+    char!('{') >>
+    opt!(space) >>
+    expression: inline_expression >>
+    opt!(space) >>
+    char!('}') >>
+    (expression)
+));
 
 // TODO: inline-expression           ::= quoted-text | number | identifier | external | attribute-expression | variant-expression | call-expression | placeable
-// named!(inline_expression <&str, ast::InlineExpression>, alt!(quoted_text | number | identifier | external | placeable));
+named!(inline_expression <&str, ast::InlineExpression>, alt!(do_parse!(
+        quoted_text: quoted_text >>
+        (ast::InlineExpression::QuotedText(quoted_text))
+    ) | do_parse!(
+        number: number >>
+        (ast::InlineExpression::Number(number))
+    ) | do_parse!(
+        identifier: identifier >>
+        (ast::InlineExpression::Identifier(identifier))
+    ) | do_parse!(
+        external: external >>
+        (ast::InlineExpression::External(external))
+    ) | placeable
+));
 
 // TODO: block-expression ::= select-expression | variant-list
 // TODO: select-expression ::= inline-expression __ '->' __ variant-list
