@@ -198,6 +198,12 @@ named!(inline_expression <&str, ast::InlineExpression>, alt!(do_parse!(
     ) | do_parse!(
         external: external >>
         (ast::InlineExpression::External(external))
+    ) | do_parse!(
+        attribute_expression: attribute_expression >>
+        (ast::InlineExpression::AttributeExpression(attribute_expression))
+    ) | do_parse!(
+        variant_expression: variant_expression >>
+        (ast::InlineExpression::VariantExpression(variant_expression))
     ) | placeable
 ));
 
