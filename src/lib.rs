@@ -11,7 +11,7 @@ use nom::{IResult, space, alphanumeric, eol};
 
 use std::str;
 
-// TODO: body ::= (_* NL)* (entry NL)* entry? EOF
+// TODO: body ::= blank-line* (entry NL blank-line*)* entry? EOF
 // TODO: entry ::= comment | section | message
 
 named!(comment<&str, ast::Comment>, do_parse!(
@@ -39,6 +39,7 @@ named!(break_indent<&str, ()>, do_parse!(
     ) >>
     ()
 ));
+// TODO: blank-line ::= inline-space* line-break
 
 named!(identifier<&str, ast::Identifier>, do_parse!(
     name: re_find_static!(r"^[a-zA-Z_?-][a-zA-Z0-9_?-]*") >>
