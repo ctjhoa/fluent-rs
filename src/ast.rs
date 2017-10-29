@@ -72,3 +72,9 @@ pub enum NamedArgumentValue {
     QuotedText(QuotedText),
     Number(Number),
 }
+
+#[derive(Debug, PartialEq)]
+pub enum Argument {
+    InlineExpression(InlineExpression),
+    NamedArgument(NamedArgument),
+}

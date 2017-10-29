@@ -206,7 +206,14 @@ named!(variant_expression <&str, ast::VariantExpression>, do_parse!(
     (ast::VariantExpression{ identifier, key })
 ));
 
-// TODO: argument ::= inline-expression | named-argument
+named!(argument <&str, ast::Argument>, alt!(do_parse!(
+        inline_expression: inline_expression >>
+        (ast::Argument::InlineExpression(inline_expression))
+    ) | do_parse!(
+        named_argument: named_argument >>
+        (ast::Argument::NamedArgument(named_argument))
+    )
+));
 named!(named_argument_value <&str, ast::NamedArgumentValue>, alt!(do_parse!(
         quoted_text: quoted_text >>
         (ast::NamedArgumentValue::QuotedText(quoted_text))
