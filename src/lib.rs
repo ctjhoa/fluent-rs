@@ -220,11 +220,11 @@ named!(variant_expression <&str, ast::VariantExpression>, do_parse!(
 ));
 
 named!(argument <&str, ast::Argument>, alt!(do_parse!(
-        inline_expression: inline_expression >>
-        (ast::Argument::InlineExpression(inline_expression))
-    ) | do_parse!(
         named_argument: named_argument >>
         (ast::Argument::NamedArgument(named_argument))
+    ) | do_parse!(
+        inline_expression: inline_expression >>
+        (ast::Argument::InlineExpression(inline_expression))
     )
 ));
 named!(named_argument_value <&str, ast::NamedArgumentValue>, alt!(do_parse!(
@@ -559,6 +559,125 @@ baz";
             name: "bar".to_string()
         })
     }));
+}
+
+#[test]
+fn parse_argument_1_test() {
+    let source = "foo:\"bar\"
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = argument(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::Argument::NamedArgument(
+        ast::NamedArgument {
+            identifier: ast::Identifier{
+                name: "foo".to_string()
+            }, value: ast::NamedArgumentValue::QuotedText(ast::QuotedText{
+                value: "bar".to_string()
+            })
+        }
+    )));
+}
+
+#[test]
+fn parse_argument_2_test() {
+    let source = "\"bar\"
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = argument(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::Argument::InlineExpression(
+        ast::InlineExpression::QuotedText(
+            ast::QuotedText{
+                value: "bar".to_string()
+            }
+        )
+    )));
+}
+
+#[test]
+fn parse_argument_3_test() {
+    let source = "-0.9
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = argument(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::Argument::InlineExpression(
+        ast::InlineExpression::Number(
+            ast::Number{
+                value: "-0.9".to_string()
+            }
+        )
+    )));
+}
+
+#[test]
+fn parse_argument_4_test() {
+    let source = "iden-tifi?er
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = argument(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::Argument::InlineExpression(
+        ast::InlineExpression::Identifier(
+            ast::Identifier{
+                name: "iden-tifi?er".to_string()
+            }
+        )
+    )));
+}
+
+#[test]
+fn parse_argument_5_test() {
+    let source = "$iden-tifi?er
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = argument(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::Argument::InlineExpression(
+        ast::InlineExpression::External(
+            ast::External{
+                identifier: ast::Identifier{
+                    name: "iden-tifi?er".to_string()
+                }
+            }
+        )
+    )));
 }
 
 #[test]
