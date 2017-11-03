@@ -224,6 +224,18 @@ named!(variant_expression <&str, ast::VariantExpression>, do_parse!(
     char!(']') >>
     (ast::VariantExpression{ identifier, key })
 ));
+named!(call_expression <&str, ast::CallExpression>, do_parse!(
+    builtin: builtin >>
+    char!('(') >>
+    opt!(space) >>
+    arguments: separated_nonempty_list_complete!(
+        ws!(tag!(",")),
+        argument
+    ) >>
+    opt!(space) >>
+    char!(')') >>
+    (ast::CallExpression{ callee: builtin.to_string(), arguments })
+));
 
 named!(argument <&str, ast::Argument>, alt!(do_parse!(
         named_argument: named_argument >>
@@ -732,6 +744,48 @@ baz";
         value: ast::NamedArgumentValue::Number(ast::Number{
             value: "-0.9".to_string()
         })
+    }));
+}
+
+#[test]
+fn parse_call_expression_test() {
+    let source = "NUMBER($ratio, minimumFractionDigits: 2)
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = call_expression(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::CallExpression{
+        callee: "NUMBER".to_string(),
+        arguments: vec![
+            ast::Argument::InlineExpression(
+                ast::InlineExpression::External(
+                    ast::External{
+                        identifier: ast::Identifier{
+                            name: "ratio".to_string()
+                        }
+                    }
+                )
+            ),
+            ast::Argument::NamedArgument(
+                ast::NamedArgument{
+                    identifier: ast::Identifier{
+                        name: "minimumFractionDigits".to_string()
+                    },
+                    value: ast::NamedArgumentValue::Number(
+                        ast::Number{
+                            value: "2".to_string()
+                        }
+                    )
+                }
+            )
+        ]
     }));
 }
 

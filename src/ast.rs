@@ -52,6 +52,12 @@ pub enum InlineExpression {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct CallExpression {
+    pub callee: String,
+    pub arguments: Vec<Argument>,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct AttributeExpression {
     pub identifier: Identifier,
     pub value: Identifier,
