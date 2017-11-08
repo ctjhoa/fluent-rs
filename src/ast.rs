@@ -49,6 +49,7 @@ pub enum InlineExpression {
     External(External),
     AttributeExpression(AttributeExpression),
     VariantExpression(VariantExpression),
+    CallExpression(CallExpression),
 }
 
 #[derive(Debug, PartialEq)]

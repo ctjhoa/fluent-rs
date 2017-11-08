@@ -185,7 +185,6 @@ named!(placeable <&str, ast::InlineExpression>, do_parse!(
     (expression)
 ));
 
-// TODO: inline-expression           ::= quoted-text | number | identifier | external | attribute-expression | variant-expression | call-expression | placeable
 named!(inline_expression <&str, ast::InlineExpression>, alt!(do_parse!(
         quoted_text: quoted_text >>
         (ast::InlineExpression::QuotedText(quoted_text))
@@ -204,6 +203,9 @@ named!(inline_expression <&str, ast::InlineExpression>, alt!(do_parse!(
     ) | do_parse!(
         variant_expression: variant_expression >>
         (ast::InlineExpression::VariantExpression(variant_expression))
+    ) | do_parse!(
+        call_expression: call_expression >>
+        (ast::InlineExpression::CallExpression(call_expression))
     ) | placeable
 ));
 
