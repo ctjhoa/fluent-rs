@@ -192,20 +192,20 @@ named!(inline_expression <&str, ast::InlineExpression>, alt!(do_parse!(
         number: number >>
         (ast::InlineExpression::Number(number))
     ) | do_parse!(
-        identifier: identifier >>
-        (ast::InlineExpression::Identifier(identifier))
+        attribute_expression: attribute_expression >>
+        (ast::InlineExpression::AttributeExpression(attribute_expression))
     ) | do_parse!(
         external: external >>
         (ast::InlineExpression::External(external))
-    ) | do_parse!(
-        attribute_expression: attribute_expression >>
-        (ast::InlineExpression::AttributeExpression(attribute_expression))
     ) | do_parse!(
         variant_expression: variant_expression >>
         (ast::InlineExpression::VariantExpression(variant_expression))
     ) | do_parse!(
         call_expression: call_expression >>
         (ast::InlineExpression::CallExpression(call_expression))
+    ) | do_parse!(
+        identifier: identifier >>
+        (ast::InlineExpression::Identifier(identifier))
     ) | placeable
 ));
 
