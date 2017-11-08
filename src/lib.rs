@@ -531,6 +531,200 @@ baz";
 }
 
 #[test]
+fn parse_inline_expression_1_test() {
+    let source = "\"foo bar\"
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = inline_expression(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::InlineExpression::QuotedText(ast::QuotedText{
+        value: "foo bar".to_string()
+    })));
+}
+
+#[test]
+fn parse_inline_expression_2_test() {
+    let source = "1
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = inline_expression(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::InlineExpression::Number(ast::Number{
+        value: "1".to_string()
+    })));
+}
+
+#[test]
+fn parse_inline_expression_3_test() {
+    let source = "foo
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = inline_expression(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::InlineExpression::Identifier(ast::Identifier{
+        name: "foo".to_string()
+    })));
+}
+
+#[test]
+fn parse_inline_expression_4_test() {
+    let source = "$foo
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = inline_expression(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::InlineExpression::External(ast::External{
+        identifier: ast::Identifier{
+            name: "foo".to_string()
+        }
+    })));
+}
+
+#[test]
+fn parse_inline_expression_5_test() {
+    let source = "foo.bar
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = inline_expression(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::InlineExpression::AttributeExpression(ast::AttributeExpression{
+        identifier: ast::Identifier{
+            name: "foo".to_string()
+        },
+        value: ast::Identifier{
+            name: "bar".to_string()
+        }
+    })));
+}
+
+#[test]
+fn parse_inline_expression_6_test() {
+    let source = "foo[1]
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = inline_expression(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::InlineExpression::VariantExpression(ast::VariantExpression{
+        identifier: ast::Identifier{
+            name: "foo".to_string()
+        },
+        key: ast::VariantKey::Number(ast::Number{
+            value: "1".to_string()
+        })
+    })));
+}
+
+#[test]
+fn parse_inline_expression_7_test() {
+    let source = "NUMBER($ratio, minimumFractionDigits: 2)
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = inline_expression(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::InlineExpression::CallExpression(
+        ast::CallExpression{
+            callee: "NUMBER".to_string(),
+            arguments: vec![
+                ast::Argument::InlineExpression(
+                    ast::InlineExpression::External(
+                        ast::External{
+                            identifier: ast::Identifier{
+                                name: "ratio".to_string()
+                            }
+                        }
+                    )
+                ),
+                ast::Argument::NamedArgument(
+                    ast::NamedArgument{
+                        identifier: ast::Identifier{
+                            name: "minimumFractionDigits".to_string()
+                        },
+                        value: ast::NamedArgumentValue::Number(
+                            ast::Number{
+                                value: "2".to_string()
+                            }
+                        )
+                    }
+                )
+            ]
+        }
+    )));
+}
+
+#[test]
+fn parse_inline_expression_8_test() {
+    let source = "{foo[1]}
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = inline_expression(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::InlineExpression::VariantExpression(ast::VariantExpression{
+        identifier: ast::Identifier{
+            name: "foo".to_string()
+        },
+        key: ast::VariantKey::Number(ast::Number{
+            value: "1".to_string()
+        })
+    })));
+}
+
+#[test]
 fn parse_attribute_expression_test() {
     let source = "foo.bar
 baz";
