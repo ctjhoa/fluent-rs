@@ -512,6 +512,25 @@ baz";
 }
 
 #[test]
+fn parse_placeable_test() {
+    let source = "{\"foo bar\"}
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = placeable(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::InlineExpression::QuotedText(ast::QuotedText{
+        value: "foo bar".to_string()
+    })));
+}
+
+#[test]
 fn parse_attribute_expression_test() {
     let source = "foo.bar
 baz";
