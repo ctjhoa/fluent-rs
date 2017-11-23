@@ -7,7 +7,7 @@ extern crate regex;
 
 mod ast;
 
-use nom::{IResult, space, alphanumeric, eol};
+use nom::{IResult, space, alphanumeric, eol, hex_digit};
 
 use std::str;
 
@@ -170,6 +170,25 @@ named!(value <Vec<&str> >,
 //                          | break-indent
 //                          | '\u' hexdigit hexdigit hexdigit hexdigit
 //                          | '\' [#x5c#x7b]
+named!(text_char <&str, char>, alt_complete!(
+    do_parse!(
+        char!('\\') >>
+        char!('\u{005C}') >>
+        ('\u{005C}')
+    ) | do_parse!(
+        char!('\\') >>
+        char!('\u{007B}') >>
+        ('\u{007B}')
+    ) | do_parse!(
+        char!('\\') >>
+        char!('u') >>
+        hex: take_s!(4) >>
+        (u8::from_str_radix(hex, 16).map(|n| n as char).unwrap())
+    ) | do_parse!(
+        break_indent >>
+        (' ')
+    ) | none_of!("\u{000A}\u{000D}\u{005C}\u{007B}")
+));
 
 // TODO: text                 ::= text-char+
 
@@ -515,6 +534,87 @@ baz";
     }
 
     assert_eq!(res, IResult::Done(remaining, vec!(ast::Tag{ name: "foo".to_string() }, ast::Tag{ name: "bar".to_string() })));
+}
+
+#[test]
+fn parse_text_char_1_test() {
+    let source = "\\\u{005C}bc";
+
+    let remaining = "bc";
+
+    let res = text_char(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, '\u{005C}'));
+}
+
+#[test]
+fn parse_text_char_2_test() {
+    let source = "\\\u{007B}bc";
+
+    let remaining = "bc";
+
+    let res = text_char(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, '\u{007B}'));
+}
+
+#[test]
+fn parse_text_char_3_test() {
+    let source = "\\u007Bbc";
+
+    let remaining = "bc";
+
+    let res = text_char(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, '\u{007B}'));
+}
+
+#[test]
+fn parse_text_char_4_test() {
+    let source = "
+  bc";
+
+    let remaining = "bc";
+
+    let res = text_char(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ' '));
+}
+
+#[test]
+fn parse_text_char_5_test() {
+    let source = "abc";
+
+    let remaining = "bc";
+
+    let res = text_char(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, 'a'));
 }
 
 #[test]
