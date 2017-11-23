@@ -39,7 +39,12 @@ named!(break_indent<&str, ()>, do_parse!(
     ) >>
     ()
 ));
-// TODO: blank-line ::= inline-space* line-break
+
+named!(blank_line<&str, ()>, do_parse!(
+    space >>
+    eol >>
+    ()
+));
 
 named!(identifier<&str, ast::Identifier>, do_parse!(
     name: re_find_static!(r"^[a-zA-Z_?-][a-zA-Z0-9_?-]*") >>
@@ -318,6 +323,23 @@ fn parse_break_indent_test() {
     let remaining = "Long value";
 
     let res = break_indent(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ()));
+}
+
+#[test]
+fn parse_blank_line_test() {
+    let source = "\u{0020}\u{0020}
+Long value";
+
+    let remaining = "Long value";
+
+    let res = blank_line(source);
     println!("{:?}", res);
     match res {
         IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
