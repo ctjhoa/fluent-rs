@@ -14,6 +14,7 @@ use std::str;
 // TODO: body ::= blank-line* (entry NL blank-line*)* entry? EOF
 // TODO: entry ::= comment | section | message
 
+// FIXME: comment ::= ('//' (char - NL)* NL)+
 named!(comment<&str, ast::Comment>, do_parse!(
     tag_s!("//") >>
     value: take_while_s!(call!(|c| {
