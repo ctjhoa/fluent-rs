@@ -7,9 +7,10 @@ extern crate regex;
 
 mod ast;
 
-use nom::{IResult, space, alphanumeric, eol, hex_digit};
+use nom::{IResult, space, alphanumeric, eol};
 
 use std::str;
+use std::iter::FromIterator;
 
 // TODO: body ::= blank-line* (entry NL blank-line*)* entry? EOF
 // TODO: entry ::= comment | section | message
@@ -191,6 +192,10 @@ named!(text_char <&str, char>, alt_complete!(
 ));
 
 // TODO: text                 ::= text-char+
+named!(text <&str, String>, do_parse!(
+    chars: many1!(text_char) >>
+    (String::from_iter(chars))
+));
 
 // TODO: handle escaped quote when https://github.com/Geal/nom/issues/300 will be fixed
 named!(quoted_text <&str, ast::QuotedText>, do_parse!(
@@ -615,6 +620,23 @@ fn parse_text_char_5_test() {
     }
 
     assert_eq!(res, IResult::Done(remaining, 'a'));
+}
+
+#[test]
+fn parse_text_test() {
+    let source = "foo
+bar";
+
+    let remaining = "\nbar";
+
+    let res = text(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, "foo".to_string()));
 }
 
 #[test]
