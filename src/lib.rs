@@ -164,7 +164,16 @@ named!(value <Vec<&str> >,
        )
 );
 
-// TODO: pattern              ::= (text | placeable)+
+named!(pattern <&str, ast::Pattern>, alt!(
+    do_parse!(
+        text: text >>
+        (ast::Pattern::Text(text))
+    ) | do_parse!(
+        placeable: placeable >>
+        (ast::Pattern::Placeable(placeable))
+    )
+));
+
 named!(text_char <&str, char>, alt_complete!(
     do_parse!(
         char!('\\') >>
@@ -532,6 +541,61 @@ baz";
     }
 
     assert_eq!(res, IResult::Done(remaining, vec!(ast::Tag{ name: "foo".to_string() }, ast::Tag{ name: "bar".to_string() })));
+}
+
+#[test]
+fn parse_pattern_1_test() {
+    let source = "foo
+bar";
+
+    let remaining = "\nbar";
+
+    let res = pattern(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::Pattern::Text("foo".to_string())));
+}
+
+#[test]
+fn parse_pattern_2_test() {
+    let source = "\\\u{005C}bc
+bar";
+
+    let remaining = "\nbar";
+
+    let res = pattern(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::Pattern::Text("\u{005C}bc".to_string())));
+}
+
+#[test]
+fn parse_pattern_3_test() {
+    let source = "{\"foo bar\"}
+baz";
+
+    let remaining = "\nbaz";
+
+    let res = pattern(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::Pattern::Placeable(
+        ast::InlineExpression::QuotedText(ast::QuotedText{
+            value: "foo bar".to_string()
+        })
+    )));
 }
 
 #[test]

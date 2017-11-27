@@ -87,3 +87,9 @@ pub enum Argument {
     InlineExpression(InlineExpression),
     NamedArgument(NamedArgument),
 }
+
+#[derive(Debug, PartialEq)]
+pub enum Pattern {
+    Placeable(InlineExpression),
+    Text(String)
+}
