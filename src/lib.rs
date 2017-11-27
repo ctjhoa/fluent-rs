@@ -165,12 +165,6 @@ named!(value <Vec<&str> >,
 );
 
 // TODO: pattern              ::= (text | placeable)+
-//       /* text can only include newlines if they're followed by an indent */
-//       /* \ and { must be escaped */
-// TODO: text-char            ::= (char - line-break) - [#x5c#x7b]
-//                          | break-indent
-//                          | '\u' hexdigit hexdigit hexdigit hexdigit
-//                          | '\' [#x5c#x7b]
 named!(text_char <&str, char>, alt_complete!(
     do_parse!(
         char!('\\') >>
@@ -191,7 +185,6 @@ named!(text_char <&str, char>, alt_complete!(
     ) | none_of!("\u{000A}\u{000D}\u{005C}\u{007B}")
 ));
 
-// TODO: text                 ::= text-char+
 named!(text <&str, String>, do_parse!(
     chars: many1!(text_char) >>
     (String::from_iter(chars))
