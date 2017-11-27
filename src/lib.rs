@@ -89,19 +89,32 @@ named!(variant_symbol<&str, ast::VariantSymbol>, do_parse!(
 ));
 
 // TODO: variant ::= NL __ '[' _? variant-key _? ']' __ pattern
-// WAIT FOR 'pattern'
-// named!(variant<&str, (&str, &str)>, do_parse!(
-//     eol >>
-//     break_indent >>
-//     char!('[') >>
-//     opt!(space) >>
-//     variant_key: variant_key >>
-//     opt!(space) >>
-//     char!(']') >>
-//     pattern: pattern >>
-//     (variant_key, pattern)
-// ));
+// TODO: TEST
+named!(variant<&str, ast::Variant>, do_parse!(
+    eol >>
+    break_indent >>
+    char!('[') >>
+    opt!(space) >>
+    variant_key: variant_key >>
+    opt!(space) >>
+    char!(']') >>
+    pattern: pattern >>
+    (ast::Variant{ key: variant_key, pattern: pattern })
+));
 // TODO: default-variant ::= NL __ '*[' _? variant-key _? ']' __ pattern
+// TODO: TEST
+named!(default_variant<&str, ast::Variant>, do_parse!(
+    eol >>
+    break_indent >>
+    tag!("*[") >>
+    opt!(space) >>
+    variant_key: variant_key >>
+    opt!(space) >>
+    char!(']') >>
+    pattern: pattern >>
+    (ast::Variant{ key: variant_key, pattern: pattern })
+));
+
 // TODO: variant-list ::= variant* default-variant variant*
 
 named!(tag <&str, ast::Tag>, do_parse!(

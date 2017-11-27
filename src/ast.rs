@@ -93,3 +93,9 @@ pub enum Pattern {
     Placeable(InlineExpression),
     Text(String)
 }
+
+#[derive(Debug, PartialEq)]
+pub struct Variant {
+    pub key: VariantKey,
+    pub pattern: Pattern,
+}
