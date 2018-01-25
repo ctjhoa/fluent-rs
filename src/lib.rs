@@ -114,6 +114,13 @@ named!(default_variant<&str, ast::Variant>, do_parse!(
 ));
 
 // TODO: variant-list ::= variant* default-variant variant*
+// https://github.com/Geal/nom/issues/639
+named!(variant_list <&str, Vec<ast::Variant> >,
+    fold_many0!( alt!(variant | default_variant ), Vec::new(), |mut acc: Vec<_>, item| {
+        acc.push(item);
+        acc
+    })
+);
 
 named!(tag <&str, ast::Tag>, do_parse!(
     char!('#') >>
