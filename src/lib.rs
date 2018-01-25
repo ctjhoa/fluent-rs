@@ -98,6 +98,7 @@ named!(variant<&str, ast::Variant>, do_parse!(
     variant_key: variant_key >>
     opt!(space) >>
     char!(']') >>
+    break_indent >>
     pattern: pattern >>
     (ast::Variant{ key: variant_key, pattern: pattern })
 ));
@@ -111,6 +112,7 @@ named!(default_variant<&str, ast::Variant>, do_parse!(
     variant_key: variant_key >>
     opt!(space) >>
     char!(']') >>
+    break_indent >>
     pattern: pattern >>
     (ast::Variant{ key: variant_key, pattern: pattern })
 ));
