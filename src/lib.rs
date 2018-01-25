@@ -358,9 +358,25 @@ entity2 = value2";
 }
 
 #[test]
-fn parse_break_indent_test() {
+fn parse_break_indent_1_test() {
     let source = "
   Long value";
+
+    let remaining = "Long value";
+
+    let res = break_indent(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(i, o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ()));
+}
+
+#[test]
+fn parse_break_indent_2_test() {
+    let source = "     Long value";
 
     let remaining = "Long value";
 
