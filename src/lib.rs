@@ -88,8 +88,6 @@ named!(variant_symbol<&str, ast::VariantSymbol>, do_parse!(
     (ast::VariantSymbol{ name: value.to_string() })
 ));
 
-// TODO: variant ::= NL __ '[' _? variant-key _? ']' __ pattern
-// TODO: TEST
 named!(variant<&str, ast::Variant>, do_parse!(
     eol >>
     break_indent >>
@@ -102,8 +100,6 @@ named!(variant<&str, ast::Variant>, do_parse!(
     pattern: pattern >>
     (ast::Variant{ key: variant_key, pattern: pattern })
 ));
-// TODO: default-variant ::= NL __ '*[' _? variant-key _? ']' __ pattern
-// TODO: TEST
 named!(default_variant<&str, ast::Variant>, do_parse!(
     eol >>
     break_indent >>
