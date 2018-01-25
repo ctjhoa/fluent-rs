@@ -562,6 +562,29 @@ remaining";
 }
 
 #[test]
+fn parse_default_variant_test() {
+    let source = "
+  *[ bar ]  foo
+remaining";
+
+    let remaining = "\nremaining";
+
+    let res = default_variant(source);
+    println!("{:?}", res);
+    match res {
+        IResult::Done(ref i, ref o) => println!("i: {} | o: {:?}", i, o),
+        _ => println!("error")
+    }
+
+    assert_eq!(res, IResult::Done(remaining, ast::Variant{
+        key: ast::VariantKey::VariantSymbol(ast::VariantSymbol{
+            name: "bar".to_string()
+        }),
+        pattern: ast::Pattern::Text("foo".to_string())
+    }));
+}
+
+#[test]
 fn parse_tag_test() {
     let source = "#foo
 bar";
